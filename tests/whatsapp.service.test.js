@@ -6,6 +6,7 @@ process.env.PHONE_NUMBER_ID = 'test-phone-id';
 const {
   sendBillActionMessage,
   sendBillEditMenuMessage,
+  sendBillImage,
   sendBillPdf,
   sendCustomerSelectionMessage,
 } = await import('../src/services/whatsapp.service.js');
@@ -120,4 +121,55 @@ test('uploads a bill PDF and sends it to the selected WhatsApp number', async ()
   assert.equal(calls[1].url.endsWith('/messages'), true);
   assert.equal(calls[1].options.body.includes('"to":"+919876543210"'), true);
   assert.equal(calls[1].options.body.includes('"type":"document"'), true);
+});
+
+test('uploads a bill PNG with existing WhatsApp auth and sends its media ID as an image', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    const body = calls.length === 1
+      ? { id: 'image-media-id' }
+      : { messages: [{ id: 'bill-image-message' }] };
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    await sendBillImage('+919876543210', Buffer.from('png-data'));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.match(calls[0].url, /\/media$/);
+  assert.equal(calls[0].options.headers.Authorization, 'Bearer test-token');
+  const uploadedFile = calls[0].options.body.get('file');
+  assert.equal(uploadedFile.type, 'image/png');
+  assert.equal(calls[1].url.endsWith('/messages'), true);
+  assert.deepEqual(JSON.parse(calls[1].options.body), {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: '+919876543210',
+    type: 'image',
+    image: { id: 'image-media-id' },
+  });
+});
+
+test('does not upload bill images larger than WhatsApp supports', async () => {
+  const originalFetch = globalThis.fetch;
+  let uploaded = false;
+  globalThis.fetch = async () => {
+    uploaded = true;
+    throw new Error('Unexpected upload');
+  };
+  try {
+    await assert.rejects(
+      sendBillImage('+919876543210', Buffer.alloc(5_000_001)),
+      /5 MB image limit/,
+    );
+    assert.equal(uploaded, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

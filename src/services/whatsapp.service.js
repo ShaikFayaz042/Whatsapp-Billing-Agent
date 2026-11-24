@@ -36,6 +36,29 @@ async function sendMessage(to, message) {
   return result;
 }
 
+async function uploadMedia(buffer, contentType, fileName, fallbackError) {
+  if (!env.whatsappAccessToken || !env.phoneNumberId) {
+    throw new Error('WhatsApp access token and phone number ID are required.');
+  }
+
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('file', new Blob([buffer], { type: contentType }), fileName);
+  const response = await fetch(
+    `https://graph.facebook.com/${env.graphApiVersion}/${env.phoneNumberId}/media`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.whatsappAccessToken}` },
+      body: form,
+    },
+  );
+  const result = await response.json();
+  if (!response.ok || typeof result.id !== 'string') {
+    throw new Error(result.error?.message ?? fallbackError);
+  }
+  return result.id;
+}
+
 export async function sendTextMessage(to, text) {
   return sendMessage(to, {
     type: 'text',
@@ -77,33 +100,39 @@ export async function sendBillEditMenuMessage(to) {
 }
 
 export async function sendBillPdf(to, pdfBuffer, fileName) {
-  if (!env.whatsappAccessToken || !env.phoneNumberId) {
-    throw new Error('WhatsApp access token and phone number ID are required.');
-  }
-
-  const form = new FormData();
-  form.append('messaging_product', 'whatsapp');
-  form.append('file', new Blob([pdfBuffer], { type: 'application/pdf' }), fileName);
-  const uploadResponse = await fetch(
-    `https://graph.facebook.com/${env.graphApiVersion}/${env.phoneNumberId}/media`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${env.whatsappAccessToken}` },
-      body: form,
-    },
+  const mediaId = await uploadMedia(
+    pdfBuffer,
+    'application/pdf',
+    fileName,
+    'WhatsApp could not upload the bill PDF.',
   );
-  const uploadResult = await uploadResponse.json();
-  if (!uploadResponse.ok || typeof uploadResult.id !== 'string') {
-    throw new Error(uploadResult.error?.message ?? 'WhatsApp could not upload the bill PDF.');
-  }
-
   return sendMessage(to, {
     type: 'document',
     document: {
-      id: uploadResult.id,
+      id: mediaId,
       filename: fileName,
       caption: "Your bill from SHE'S BOUTIQUE TAILORS.",
     },
+  });
+}
+
+export async function sendBillImage(to, imageBuffer) {
+  if (!Buffer.isBuffer(imageBuffer)) {
+    throw new Error('Bill image must be provided as a PNG buffer.');
+  }
+  if (imageBuffer.length > 5_000_000) {
+    throw new Error("Bill image exceeds WhatsApp's 5 MB image limit.");
+  }
+
+  const mediaId = await uploadMedia(
+    imageBuffer,
+    'image/png',
+    'bill.png',
+    'WhatsApp could not upload the bill image.',
+  );
+  return sendMessage(to, {
+    type: 'image',
+    image: { id: mediaId },
   });
 }
 

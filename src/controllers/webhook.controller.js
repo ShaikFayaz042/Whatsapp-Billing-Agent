@@ -3,7 +3,7 @@ import { env } from '../config/env.js';
 import {
   sendBillActionMessage,
   sendBillEditMenuMessage,
-  sendBillPdf,
+  sendBillImage,
   sendCustomerSelectionMessage,
   sendTextMessage,
 } from '../services/whatsapp.service.js';
@@ -12,7 +12,7 @@ import {
   calculateBillTotals,
   generateBillPreview,
 } from '../services/billing.service.js';
-import { generateBillPdf } from '../services/bill-pdf.service.js';
+import { generateBillImage } from '../services/bill-image.service.js';
 import { normalizePhoneNumber } from '../models/customer.model.js';
 import {
   BILL_EDIT_SESSION_TTL_MS,
@@ -652,9 +652,8 @@ async function sendConfirmedBill(draft, expectedStage) {
   };
   await billDrafts.updateDraft(draft.ownerWaId, { billData });
   const totals = calculateBillTotals(billData);
-  const pdf = await generateBillPdf(billData, totals);
-  const fileName = `bill-${Date.now()}.pdf`;
-  await sendBillPdf(recipient.phoneNumber, pdf, fileName);
+  const image = await generateBillImage(billData, totals);
+  await sendBillImage(recipient.phoneNumber, image);
   await billDrafts.markDraftSent(draft.ownerWaId);
   await sendTextMessage(draft.ownerWaId, `Bill sent to ${recipient.name} on WhatsApp.`);
 }
