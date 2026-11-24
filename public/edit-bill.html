@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Edit bill items</title>
+    <link rel="stylesheet" href="/edit-assets/edit-bill.css">
+    <script src="/edit-assets/edit-bill.js" defer></script>
+  </head>
+  <body>
+    <main class="page">
+      <header class="brand">
+        <span class="brand-mark">S</span>
+        <div>
+          <p class="eyebrow">SHE'S BOUTIQUE</p>
+          <h1>Edit bill</h1>
+        </div>
+      </header>
+
+      <section class="card" aria-labelledby="items-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">BILL ITEMS</p>
+            <h2 id="items-title">Make your changes</h2>
+          </div>
+          <p id="customer-name" class="customer-name"></p>
+        </div>
+        <p class="intro">Update item names, quantities and rates. Add or remove items, then submit once.</p>
+        <div id="error" class="notice error" role="alert" hidden></div>
+        <div id="success" class="notice success" role="status" hidden></div>
+        <div id="items" class="items" aria-live="polite"></div>
+        <button id="add-item" class="button secondary" type="button">＋ Add another item</button>
+        <div class="total-row">
+          <span>Updated total</span>
+          <strong id="total">—</strong>
+        </div>
+        <button id="submit" class="button primary" type="button">Submit changes</button>
+        <p class="footnote">Your changes are validated and saved securely. This link expires after 15 minutes.</p>
+      </section>
+    </main>
+  </body>
+</html>
