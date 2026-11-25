@@ -1,238 +1,268 @@
-# WhatsApp Billing Agent
+# WhatsApp Billing Assistant
 
-A voice-first billing assistant for a tailoring business. The application
-receives the owner's WhatsApp messages through Meta's WhatsApp Cloud API,
-turns voice notes into validated bill drafts, supports contact and item edits,
-and sends a branded PNG receipt to the selected customer.
+A voice-first, AI-powered billing assistant for tailoring businesses. It transforms WhatsApp voice notes and text messages into structured, validated bill drafts, helps resolve missing information, and delivers branded digital receipts to customers after confirmation.
 
-## Project status
+## Overview
 
-- **Active workflow:** WhatsApp webhook, MongoDB-backed bill drafts, WhatsApp
-  reply buttons and customer lists, a short-lived web item editor, and PNG bill
-  delivery.
-- **WhatsApp Flows:** not mounted or used by the active application. A local
-  `whatsapp-flows/` archive may exist, but that directory is git-ignored and is
-  therefore not included in normal clones or commits.
-- **PDF support:** the PDF generator and PDFKit dependency are retained, but
-  confirmed bills currently use the PNG delivery path.
+The WhatsApp Billing Assistant simplifies the billing process for tailoring businesses by allowing the owner to create and manage customer bills directly through WhatsApp.
 
-## Capabilities
+Instead of manually entering every item and calculating totals, the owner can send voice notes or text messages describing the bill. The application transcribes voice messages, extracts structured billing information, validates the data, and maintains the draft across follow-up messages.
 
-- Verify Meta webhook requests with an HMAC SHA-256 signature.
-- Receive text and voice messages from the configured business owner.
-- Download WhatsApp audio and translate it to English with Groq Whisper.
-- Extract item names, quantities, prices, discounts, and advance payments with
-  a Groq chat model, then validate the result deterministically.
-- Preserve incomplete drafts and ask targeted clarification questions.
-- Edit the customer in WhatsApp or edit all bill items in a mobile web form.
-- Render a branded, portrait PNG receipt locally and send it through WhatsApp.
-- Keep one active bill draft per owner and atomically claim it before sending.
+Once the bill is complete, the owner can review, edit, confirm, and send a branded PNG receipt to the selected customer.
 
-## Technology
+## Features
 
-| Concern | Implementation |
-| --- | --- |
-| Runtime and HTTP | Node.js ES modules, Express, and built-in `fetch`/`FormData` |
-| Messaging | Meta WhatsApp Cloud API |
-| Audio translation | Groq `whisper-large-v3` |
-| Bill extraction | Groq `openai/gpt-oss-120b` with JSON response mode |
-| Persistence | MongoDB with Mongoose |
-| Receipt rendering | SVG converted to PNG with Sharp |
-| Web item editor | Static HTML/CSS/JavaScript served by Express |
+- **Voice-based billing:** Accepts WhatsApp voice notes and text messages as billing instructions.
+- **AI-powered extraction:** Uses Groq Whisper and a Groq language model to extract item names, quantities, prices, discounts, and advance payments.
+- **Context-aware conversations:** Preserves active bill drafts across follow-up messages, allowing the owner to provide corrections and additional details.
+- **Deterministic validation:** Validates extracted billing information and requests clarification when required details are missing or ambiguous.
+- **Customer management:** Supports customer selection and customer contact updates through WhatsApp.
+- **Bill editing:** Provides a mobile-friendly web form for editing bill items through a short-lived, single-use link.
+- **WhatsApp bill preview:** Presents the prepared bill with Edit, Confirm & Send, and Cancel Bill actions.
+- **Branded receipt generation:** Renders portrait-style PNG receipts locally using SVG and Sharp.
+- **Automated delivery:** Uploads the generated receipt to Meta and sends it to the selected customer.
+- **Persistent drafts:** Stores customer records and active bill drafts in MongoDB.
+- **Duplicate-send protection:** Uses atomic bill-draft claiming and in-process message deduplication to reduce duplicate processing and sends.
 
-## End-to-end workflow
+## Demo and Screenshots
 
-1. The owner sends a voice note or text to the configured WhatsApp number.
-2. The webhook verifies the request signature, acknowledges Meta, and queues
-   the message for processing.
-3. Voice notes are downloaded, translated to English, and parsed into
-   structured bill data. Existing draft data is retained unless a field is
-   explicitly updated.
-4. Deterministic validation checks item names, quantities, prices, and
-   adjustments. Missing or ambiguous details return to the owner as questions.
-5. A ready draft is previewed in WhatsApp with **Edit**, **Confirm & Send**, and
-   **Cancel Bill** actions.
-6. Contact edits use the customer list or a submitted WhatsApp number. Item
-   edits open a mobile web form using a random, short-lived, single-use token.
-7. Confirmation atomically claims the draft, calculates totals, renders the
-   receipt PNG, uploads it to Meta, sends it to the selected customer, and
-   marks the draft sent.
+Screenshots and a demonstration video can be added here to showcase the actual WhatsApp conversation, bill editing experience, and generated receipt.
 
-### High-level architecture
+<!-- Add actual application screenshots before publishing.
 
-```text
-WhatsApp Voice / Text
-        |
-        v
-   Meta Webhook
-        |
-        v
-  Audio Transcription
-   (Groq Whisper)
-        |
-        v
-  AI Bill Extraction
-        |
-        v
- Deterministic Validation
-        |
-        v
-   MongoDB Draft
-        |
-        v
- WhatsApp Bill Preview
-        |
-   +----+-----+
-   |    |     |
- Edit Confirm Cancel
-   |    |       |
-   v    v       v
-Web Form PNG Receipt End
-           |
-           v
-     WhatsApp Customer
-```
+![WhatsApp Voice Interaction](docs/images/voice-interaction.png)
 
-The diagram is intentionally simplified: text messages bypass audio
-transcription. **Edit Contact** stays in WhatsApp; **Edit Items** opens the web
-form and returns an updated preview.
+![WhatsApp Bill Preview](docs/images/bill-preview.png)
 
-The application serializes messages per sender within one server process.
-MongoDB stores customers and bill drafts; no separate bill-history or
-idempotency collection is used.
+![Generated Bill Receipt](docs/images/bill-receipt.png)
 
-## Receipt image
+-->
 
-The current receipt follows the supplied reference: centered boutique logo,
-date in the upper-right, customer and WhatsApp number, navy table and rules,
-and a single right-aligned **TOTAL**. It uses a warm off-white background and a
-thin outer frame.
+<!-- Add a publicly accessible demonstration video or GIF here. -->
 
-- Bill data is rendered as SVG and converted to PNG with Sharp.
-- The image is generated in memory; bill images are not permanently stored.
-- Item names wrap and the portrait image grows with the rows; text is not
-  reduced to fit.
-- The image is rejected rather than sent if it exceeds 5,000,000 bytes.
-- The logo is a transparent raster asset in `src/assets/boutique-logo.png`,
-  derived from the supplied design reference. A higher-resolution or vector
-  original would produce a sharper logo.
-- The displayed date uses the `Asia/Kolkata` timezone. Indian `+91` phone
-  numbers are formatted as `+91 12345 67890`; other numbers are shown as
-  supplied.
+## Technology Stack
 
-The receipt intentionally shows only one final total. Discounts and advances
-are not itemized on the image; consequently, when a discount applies, the
-displayed total can differ from the sum of the visible item amounts.
+| Layer                 | Technology                              |
+| --------------------- | --------------------------------------- |
+| Runtime               | Node.js (ES Modules)                    |
+| Backend               | Express.js                              |
+| Messaging             | Meta WhatsApp Cloud API                 |
+| Speech-to-text        | Groq Whisper (`whisper-large-v3`)     |
+| AI bill extraction    | Groq Chat API (`openai/gpt-oss-120b`) |
+| Structured extraction | JSON response mode                      |
+| Database              | MongoDB with Mongoose                   |
+| Receipt rendering     | SVG and Sharp                           |
+| Web item editor       | HTML, CSS, and JavaScript               |
 
 ## Architecture
 
-| Area | Responsibility |
+The application follows a webhook-driven architecture in which WhatsApp handles communication, Groq handles transcription and structured extraction, MongoDB maintains customer and draft data, and the backend manages validation, editing, and receipt delivery.
+
+```mermaid
+flowchart TD
+    A["Owner sends WhatsApp text or voice note"]
+    B["Meta WhatsApp Cloud API"]
+    C["Express Webhook"]
+    D{"Message type"}
+    E["Groq Whisper Transcription"]
+    F["Groq AI Bill Extraction"]
+    G["Deterministic Validation"]
+    H{"Bill complete?"}
+    I["Ask clarification via WhatsApp"]
+    J[("MongoDB Active Bill Draft")]
+    K["WhatsApp Bill Preview"]
+    L["Mobile Web Item Editor"]
+    M["Confirm Bill"]
+    N["Atomic Draft Claim"]
+    O["SVG Receipt Rendering"]
+    P["Sharp PNG Conversion"]
+    Q["Meta Media Upload"]
+    R["Send Receipt to Customer"]
+
+    A --> B --> C --> D
+    D -->|Voice| E --> F
+    D -->|Text| F
+    F --> G --> H
+    H -->|No| I --> A
+    H -->|Yes| J --> K
+    K -->|Edit Items| L --> J
+    K -->|Confirm & Send| M --> N
+    N --> O --> P --> Q --> R
+```
+
+### Processing workflow
+
+1. The owner sends a voice note or text message to the configured WhatsApp Business number.
+2. Meta forwards the message to the Express webhook, which verifies the webhook signature and acknowledges the request before asynchronous message processing.
+3. Voice messages are downloaded and translated into English using Groq Whisper.
+4. The Groq chat model extracts structured billing information from the message.
+5. Deterministic validation checks item names, quantities, prices, discounts, advance payments, and other required values.
+6. Incomplete or ambiguous information is sent back to the owner as clarification questions.
+7. The validated bill is maintained as an active draft in MongoDB, preserving context across follow-up messages.
+8. The owner reviews the bill through WhatsApp and can:
+   - Edit the customer details.
+   - Open a mobile-friendly web form to modify bill items.
+   - Confirm and send the bill.
+   - Cancel the draft.
+9. On confirmation, the application atomically claims the draft, calculates the final amount, generates the PNG receipt, uploads it to Meta, sends it to the selected customer, and marks the draft as sent.
+
+**Processing note:** Messages are serialized per sender within a single server process. The application does not currently use a separate durable job queue.
+
+## Receipt Generation
+
+The application renders branded portrait PNG receipts locally from SVG using Sharp, without external image-generation or browser-rendering services. Receipts use the `Asia/Kolkata` date, automatically wrap item names, resize for item count, and display a right-aligned total. The logo is read from `src/assets/boutique-logo.png`.
+
+Generated images remain in memory and are not stored permanently. Images over 5,000,000 bytes are rejected rather than sent.
+
+**Receipt limitations:** Discounts and advance payments are applied to the final calculation but are not displayed as separate rows on the receipt. Therefore, the final total may differ from the sum of the visible item amounts.
+
+## Project Structure
+
+```text
+Whatsapp-Billing-Agent/
+│
+├── data/                         # Local customer seed data (ignored)
+├── downloads/                    # Downloaded WhatsApp media (ignored)
+├── public/                       # Mobile bill editor assets
+│
+├── scripts/                      # Customer seeding and webhook tests
+│
+├── src/
+│   ├── assets/
+│   │   └── boutique-logo.png
+│   │
+│   ├── config/                   # Application configuration
+│   ├── controllers/              # Webhook and web editor controllers
+│   ├── models/                   # Mongoose schemas
+│   ├── routes/                   # Express route definitions
+│   │
+│   ├── services/
+│   │   ├── transcription.service.js
+│   │   ├── parser.service.js
+│   │   ├── bill-validation.service.js
+│   │   ├── billing.service.js
+│   │   ├── bill-draft.service.js
+│   │   ├── bill-edit-web.service.js
+│   │   ├── bill-image.service.js
+│   │   ├── whatsapp.service.js
+│   │   └── media.service.js
+│   │
+│   ├── app.js
+│   └── server.js
+│
+├── tests/                        # Application test suites
+├── .env.example
+├── package.json
+└── README.md
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20.9+, npm, and MongoDB
+- Meta WhatsApp Business configuration and a Groq API key
+- A publicly accessible HTTPS endpoint for webhooks and bill editing
+
+### Installation
+
+```bash
+git clone https://github.com/ShaikFayaz042/Whatsapp-Billing-Agent.git
+cd Whatsapp-Billing-Agent
+npm ci
+```
+
+### Environment Configuration
+
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Windows PowerShell: `Copy-Item .env.example .env`
+
+Configure the required values:
+
+| Variable | Purpose |
 | --- | --- |
-| `src/app.js`, `src/server.js` | Express setup, route mounting, MongoDB connection, and startup checks |
-| `src/controllers/webhook.controller.js` | Webhook verification, message processing, draft workflow, and confirmed delivery |
-| `src/services/transcription.service.js` | Groq Whisper audio translation |
-| `src/services/parser.service.js` | Structured bill extraction and edit/clarification parsing |
-| `src/services/bill-validation.service.js` | Deterministic completeness and value checks |
-| `src/services/billing.service.js` | Line-item calculations, discounts, and preview text |
-| `src/services/bill-draft.service.js` | Draft state changes, serialized conversation rules, and send claims |
-| `src/services/bill-edit-web.service.js` | Edit-token creation, item validation, and recalculation |
-| `src/controllers/bill-edit-web.controller.js` | Token-protected web editor endpoints |
-| `src/services/bill-image.service.js` | Reference-style SVG receipt rendering and PNG conversion |
-| `src/services/whatsapp.service.js` | WhatsApp message payloads and Meta media upload |
-| `src/services/media.service.js` | Authenticated WhatsApp media download |
-| `src/models/` | Mongoose customer and active-bill schemas |
+| `MONGODB_URI` | MongoDB connection string |
+| `OWNER_WA_ID` | Numeric WhatsApp ID of the business owner |
+| `META_VERIFY_TOKEN` | Meta webhook verification token |
+| `META_APP_SECRET` | Meta webhook signature secret |
+| `WHATSAPP_ACCESS_TOKEN` | WhatsApp messaging and media access token |
+| `PHONE_NUMBER_ID` | WhatsApp Business phone-number ID |
+| `GROQ_API_KEY` | Groq transcription and bill-extraction key |
+| `BILL_EDIT_BASE_URL` | Public HTTPS origin for bill-edit links |
+| `PORT`, `NODE_ENV`, `GRAPH_API_VERSION`, `SEED_CUSTOMERS` | Optional runtime settings |
 
-### Routes
+Optional defaults include port `3000`, Graph API version `v25.0`, and customer seeding disabled.
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/webhook` | Meta webhook verification challenge |
-| `POST` | `/webhook` | Signed WhatsApp messages and status events |
-| `GET` | `/edit/:token` | Load the bill item editor |
-| `GET` | `/edit/:token/data` | Load bill data into the editor |
-| `POST` | `/edit/:token` | Validate and save item changes |
-| `GET` | `/edit-assets/*` | Serve editor CSS and JavaScript |
+### Meta Webhook Configuration
 
-`src/routes/health.routes.js` exists but is not mounted. There is currently no
-health or readiness endpoint.
+```text
+https://<your-public-host>/webhook
+```
 
-## Requirements
+Configure this callback in Meta, subscribe to the `messages` field, and use `META_VERIFY_TOKEN` for verification. Ensure the server is reachable over public HTTPS and that `META_APP_SECRET`, `WHATSAPP_ACCESS_TOKEN`, `PHONE_NUMBER_ID`, and `BILL_EDIT_BASE_URL` are valid. For local development, expose the server through an HTTPS tunnel.
 
-- Node.js **20.9 or later** (required by the installed Sharp version)
-- npm
-- MongoDB (local or hosted)
-- A Meta developer app with a WhatsApp Business phone number
-- A Groq API key
-- Public HTTPS for Meta webhooks; a public HTTPS origin is also required for
-  web-based item editing
+### Start the Application
 
-## Setup
+```bash
+node src/server.js
+```
 
-1. Install dependencies:
+The server requires a running MongoDB instance and a numeric `OWNER_WA_ID`; only that sender is accepted for billing instructions. It runs directly as Node.js ES modules with no build step.
 
-   ```sh
-   npm ci
-   ```
+## Optional Customer Seeding
 
-2. Copy `.env.example` to `.env` and set the values below.
-3. Make MongoDB available at `MONGODB_URI`.
-4. Configure Meta's callback as `https://<public-host>/webhook`, use the same
-   `META_VERIFY_TOKEN`, and subscribe the app to the `messages` webhook field.
-5. Set `BILL_EDIT_BASE_URL` to the public HTTPS origin of this server, with no
-   path or query string. For local testing, expose the local server with an
-   HTTPS tunnel and use that tunnel's origin.
-6. Start the server:
+Customer records can be seeded into MongoDB using the local `data/customers.json` file.
 
-   ```sh
-   node src/server.js
-   ```
+1. Add your customer records to `data/customers.json`.
+2. Set the following variable in `.env`:
 
-The server connects to MongoDB and initializes its models before it listens.
-It refuses to start without a numeric `OWNER_WA_ID`. Messages from other
-senders are not accepted as owner bill instructions.
+```env
+SEED_CUSTOMERS=true
+```
 
-The `dev` and `start` npm scripts invoke `nodemon`, which is not declared in
-`package.json`. Use `node src/server.js`, or install/configure `nodemon`
-separately if you want watch-mode development.
+3. Run the seed command:
 
-### Environment variables
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `PORT` | No | HTTP port; defaults to `3000`. |
-| `NODE_ENV` | No | Runtime environment label. |
-| `MONGODB_URI` | Yes | MongoDB connection URI; startup fails if unavailable. |
-| `OWNER_WA_ID` | Yes | Numeric WhatsApp sender ID for the business owner. |
-| `META_VERIFY_TOKEN` | Yes for webhook setup | Secret used in Meta's verification handshake. |
-| `META_APP_SECRET` | Yes for signed webhook processing | HMAC secret used to validate `X-Hub-Signature-256`. |
-| `WHATSAPP_ACCESS_TOKEN` | Yes for WhatsApp operations | Meta token used for sending and media downloads/uploads. |
-| `PHONE_NUMBER_ID` | Yes for outbound messages | WhatsApp Business phone-number ID. |
-| `GRAPH_API_VERSION` | No | Graph API version; defaults to `v25.0`. |
-| `GROQ_API_KEY` | Yes for voice/parsing | Groq API access for audio translation and bill parsing. |
-| `BILL_EDIT_BASE_URL` | Required for item editing | Public HTTPS origin used to construct edit links. |
-| `SEED_CUSTOMERS` | No | Defaults to `false`; must be explicitly enabled to run real-customer seeding. |
-
-Keep `.env` out of source control. Use separate development and production
-credentials and never point local development at a production database.
-
-### Customer seeding
-
-Add records to the ignored local file `data/customers.json`, set
-`SEED_CUSTOMERS=true`, then run:
-
-```sh
+```bash
 npm run seed:customers
 ```
 
-The seed command upserts by normalized E.164 phone number. Reset
-`SEED_CUSTOMERS=false` after seeding. Customer names are not unique; ambiguous
-name matches require a selection or phone number.
+The seed operation upserts customers using their normalized E.164 phone numbers.
+
+After seeding, disable the option:
+
+```env
+SEED_CUSTOMERS=false
+```
+
+Customer names are not unique. Ambiguous customer-name matches require a selection or phone number.
+
+Do not commit real customer information or sensitive environment variables.
+
+## Application Routes
+
+| Method   | Endpoint              | Purpose                                              |
+| -------- | --------------------- | ---------------------------------------------------- |
+| `GET`  | `/webhook`          | Meta webhook verification challenge.                 |
+| `POST` | `/webhook`          | Receives signed WhatsApp messages and status events. |
+| `GET`  | `/edit/:token`      | Loads the bill item editor.                          |
+| `GET`  | `/edit/:token/data` | Retrieves bill information for the editor.           |
+| `POST` | `/edit/:token`      | Validates and saves bill item changes.               |
+| `GET`  | `/edit-assets/*`    | Serves editor CSS and JavaScript assets.             |
+
+The application currently does not expose a mounted health or readiness endpoint.
 
 ## Testing
 
-Run focused suites with the existing npm scripts:
+The repository includes focused test suites for the major billing and conversation workflows.
 
-```sh
+Run the available test commands:
+
+```bash
 npm run test:billing
 npm run test:validation
 npm run test:translation
@@ -241,97 +271,66 @@ npm run test:customers
 npm run test:conversation
 ```
 
-Run the image renderer and WhatsApp payload tests together:
+Run receipt rendering and WhatsApp payload tests:
 
-```sh
+```bash
 node --test tests/bill-image.service.test.js tests/whatsapp.service.test.js
 ```
 
-For the webhook smoke test, first start the server with a configured `.env`,
-then run:
+### Webhook Smoke Test
 
-```sh
+Start the application with a configured `.env` file, then run:
+
+```bash
 npm run test:webhook
 ```
 
-The script requires `META_APP_SECRET` and a server at `WEBHOOK_URL` (defaults
-to `http://localhost:3000/webhook`). There is no aggregate `npm test` script;
-run the targeted tests above. Root-level `node --test` discovery may also
-pick up the webhook smoke-test script, which requires that environment and
-server.
+The webhook smoke test requires:
 
-## Bottlenecks and trade-offs
+- `META_APP_SECRET` configured in the environment.
+- A running application server.
+- `WEBHOOK_URL` pointing to the webhook endpoint, if using a non-default address.
 
-| Decision / constraint | Benefit | Cost or failure mode |
-| --- | --- | --- |
-| Groq handles audio translation and structured extraction | Supports natural voice requests without a fixed command format | Provider latency, outages, rate limits, and model variance; validation and clarification reduce but cannot eliminate extraction errors |
-| Webhook returns HTTP 200 before asynchronous processing | Meets Meta's fast-ack expectation and avoids holding the webhook request open during AI work | Processing is not durably queued; a process crash after acknowledgement can lose work without a Meta retry |
-| Idempotency and per-sender queues are in memory | Simple, low-latency duplicate suppression and ordered handling in a single process | State is lost on restart, is not shared across instances, and the dedupe cache is limited to 10 minutes and 1,000 IDs |
-| MongoDB persists drafts, while sending is coordinated in-process | Drafts survive restarts and atomic claims reduce duplicate sends | There is no durable outbound job queue or automatic recovery for a draft left in `SENDING_BILL` after a rendering or Meta API failure |
-| PNG receipt instead of PDF | Opens directly in WhatsApp and matches the desired visual layout | Raster text is not selectable; long bills create tall images and output above 5 MB is rejected rather than paginated or reduced |
-| One visible total with no discount/advance rows | Keeps the receipt clean and faithful to the design | A discounted bill's total may not equal the sum of visible item amounts; advances are not shown on the receipt |
-| Short-lived web-edit link is a bearer token | No customer account or login system is needed | Anyone holding the link can edit that bill until expiry or first successful submission; use HTTPS and avoid logging or sharing edit URLs |
-| WhatsApp media and audio are uploaded/downloaded through Meta | No additional hosting or media service is needed | Customer-service-window/template rules still apply; downloaded source audio remains in `downloads/` until manually removed |
-| Local Sharp rendering | Keeps bill data on the application server and avoids a paid image API/browser service | Sharp uses native platform binaries; install dependencies for the deployment OS rather than copying `node_modules` across operating systems |
-
-## Security and operational limitations
-
-- Webhook signatures are checked against the raw request body using
-  timing-safe comparison.
-- Web edit tokens contain 256 bits of randomness; only the token hash is stored.
-  Tokens expire after 15 minutes, are single-use, and responses disable caching.
-- The web form is protected by possession of its edit link, not by a user
-  account. Treat that link like a secret.
-- Customer records and active drafts are stored in MongoDB. Configure database
-  access controls, backups, and encryption appropriate to the deployment.
-- Incoming audio is saved under `downloads/` and is not automatically deleted.
-  Establish a retention policy and cleanup job before production use.
-- Logs go to the console and are not centrally correlated or retained by this
-  application. Configure deployment logging and redact sensitive identifiers.
-- There is no rate limiting, distributed queue, automatic provider retry,
-  request timeout policy, or health/readiness endpoint yet.
-- Outbound free-form WhatsApp messages are subject to Meta's customer-service
-  window. When that window is closed, use an approved WhatsApp message
-  template where required.
-- A send failure after the draft is claimed can leave it in `SENDING_BILL`.
-  There is no automatic retry/release or operator recovery route yet.
-- Discounts are applied to the final bill total, but the minimal receipt does
-  not display the discount or advance payment separately.
-
-## Project structure
+The default webhook URL is:
 
 ```text
-.
-├── data/                         # Local customer seed data (ignored)
-├── downloads/                    # Downloaded WhatsApp media (ignored)
-├── public/                       # Mobile bill editor assets
-├── scripts/                      # Webhook smoke test and seed script
-├── src/
-│   ├── assets/boutique-logo.png
-│   ├── config/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   └── services/
-├── tests/
-├── .env.example
-├── package.json
-└── README.md
+http://localhost:3000/webhook
 ```
 
-## Production readiness priorities
+**Testing note:** There is currently no aggregate `npm test` script. Run the individual test suites above.
 
-1. Add a durable queue/outbox and recovery for failed sends.
-2. Move idempotency to shared storage before running multiple instances.
-3. Add outbound request timeouts, bounded retries, and clear handling for
-   ambiguous Meta send results.
-4. Add media retention and deletion policies.
-5. Add health/readiness endpoints, structured logs, metrics, and alerting.
-6. Validate WhatsApp template and customer-consent requirements for the
-   business's real messaging patterns.
-7. Replace the cropped logo with the original high-resolution/vector artwork
-   when available.
+## Security and Operational Considerations
+
+- Webhook signatures are verified with HMAC SHA-256.
+- Only the configured owner WhatsApp ID can send billing instructions.
+- Edit links use 256-bit random tokens; only token hashes are stored, and links expire after 15 minutes or after use.
+- Anyone with a valid edit link can access the associated editor.
+- Keep `.env` secrets out of source control and secure MongoDB data with access controls, backups, and encryption.
+- Downloaded audio is retained locally; define cleanup and logging policies that avoid exposing customer data.
+- Outbound free-form WhatsApp messages must follow Meta's customer-service messaging window.
+
+## Known Limitations and Trade-offs
+
+- Runs in one server process with no durable job queue.
+- Deduplication is in-memory and not shared across instances.
+- A crash after webhook acknowledgement may lose message processing work.
+- Delivery failures or process crashes may leave drafts in `SENDING_BILL`.
+- No separate bill-history or idempotency collection is maintained.
+- Generated receipts are PNGs: text is non-selectable and oversized images are rejected.
+- Discounts and advances are applied but not shown separately.
+- Downloaded audio requires manual cleanup.
+- There is no centralized logging, health endpoint, metrics, or alerting.
+- Rate limiting, request timeouts, distributed retries, and provider-failure recovery are not implemented.
+
+
+## Future Enhancements
+
+- **AI-Powered Conversational Agent:** Evolve the assistant into a fully capable AI agent that understands natural conversations, manages billing tasks, and handles follow-up requests intelligently.
+- **WhatsApp Flows Integration:** Introduce interactive WhatsApp forms and flows for structured data collection, bill editing, and customer interactions.
+- **Direct Customer Ordering:** Enable customers to interact with the AI agent directly through WhatsApp, browse services, place orders, and track order status.
+- **Automated Customer Support:** Extend the agent to handle customer queries, order updates, billing inquiries, and routine support requests.
+- **End-to-End Business Automation:** Expand the assistant beyond billing into an AI-powered business assistant that coordinates customer interactions, orders, and billing workflows.
 
 ## License
 
-ISC
+This project is licensed under the ISC License. See the [LICENSE](LICENSE) file for the complete license text.
