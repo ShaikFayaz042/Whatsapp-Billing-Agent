@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "nodemon src/server.js",
+    "start": "node src/server.js",
     "test:webhook": "node --env-file=.env scripts/test-webhook-signature.mjs",
     "test:billing": "node --test tests/billing.service.test.js",
     "test:validation": "node --test tests/bill-validation.service.test.js",

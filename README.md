@@ -26,19 +26,24 @@ Once the bill is complete, the owner can review, edit, confirm, and send a brand
 
 ## Demo and Screenshots
 
-Screenshots and a demonstration video can be added here to showcase the actual WhatsApp conversation, bill editing experience, and generated receipt.
+The screenshots below follow the billing conversation from the initial voice
+note through editing and receipt delivery. Customer phone numbers and the
+temporary bill-edit link have been redacted.
 
-<!-- Add actual application screenshots before publishing.
-
-![WhatsApp Voice Interaction](docs/images/voice-interaction.png)
-
-![WhatsApp Bill Preview](docs/images/bill-preview.png)
-
-![Generated Bill Receipt](docs/images/bill-receipt.png)
-
--->
-
-<!-- Add a publicly accessible demonstration video or GIF here. -->
+<table>
+  <tr>
+    <td align="center"><strong>1. Voice note and bill preview</strong><br><img src="docs/images/01-voice-note-and-bill-preview.jpg" width="220" alt="Voice note followed by a bill preview"></td>
+    <td align="center"><strong>2. Edit options</strong><br><img src="docs/images/02-edit-options.jpg" width="220" alt="WhatsApp edit options for a bill"></td>
+    <td align="center"><strong>3. Customer selection</strong><br><img src="docs/images/03-customer-selection.jpg" width="220" alt="Selecting a customer for the bill"></td>
+    <td align="center"><strong>4. Item editor link</strong><br><img src="docs/images/04-edit-items-link.jpg" width="220" alt="Short-lived link to edit bill items"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>5. Edit bill items</strong><br><img src="docs/images/05-mobile-item-editor.jpg" width="220" alt="Mobile form for editing bill items"></td>
+    <td align="center"><strong>6. Confirm and send</strong><br><img src="docs/images/06-confirm-bill-and-send.jpg" width="220" alt="Confirming and sending a bill after customer selection"></td>
+    <td align="center"><strong>7. Delivered receipt</strong><br><img src="docs/images/07-customer-receipt.jpg" width="220" alt="PNG receipt delivered to the customer"></td>
+    <td></td>
+  </tr>
+</table>
 
 ## Technology Stack
 
@@ -326,11 +331,10 @@ http://localhost:3000/webhook
 ## Future Enhancements
 
 - **AI-Powered Conversational Agent:** Evolve the assistant into a fully capable AI agent that understands natural conversations, manages billing tasks, and handles follow-up requests intelligently.
-- **WhatsApp Flows Integration:** Introduce interactive WhatsApp forms and flows for structured data collection, bill editing, and customer interactions.
 - **Direct Customer Ordering:** Enable customers to interact with the AI agent directly through WhatsApp, browse services, place orders, and track order status.
 - **Automated Customer Support:** Extend the agent to handle customer queries, order updates, billing inquiries, and routine support requests.
 - **End-to-End Business Automation:** Expand the assistant beyond billing into an AI-powered business assistant that coordinates customer interactions, orders, and billing workflows.
 
 ## License
 
-This project is licensed under the ISC License. See the [LICENSE](LICENSE) file for the complete license text.
+This project is licensed under the [ISC License](https://opensource.org/license/isc-license-txt/), as declared in [`package.json`](package.json).
